@@ -1,0 +1,95 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Arquivos de Build e Ferramentas do Dart
+build/
+.dart_tool/
+.packages
+.pub-cache
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# Símbolos de Debug e Logs
+*.log
+*.js_
+*.js_map
+*.snapshot
+*.sync-conflict.20*
+
+# Web específica
+.fvm/flutter_sdk
+doc/api/
+
+# Android específica
+.gradle/
+local.properties
+*.kwks
+*.keystore
+!debug.keystore
+/android/key.properties
+
+# iOS específica
+.generated/
+DerivedData/
+Runner.xcworkspace/
+xcuserdata/
+
+# Variáveis de Ambiente (Segurança)
+# NUNCA suba chaves de API ou segredos para o Git
+.env*
+lib/firebase_options.dart # Se quiser esconder sua config do Firebase
+
+# Configurações de IDE (Opcional, mas recomendado)
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# Arquivos de Sistema
+.DS_Store
+Thumbs.db
