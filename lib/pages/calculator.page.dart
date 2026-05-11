@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:meu_app/enums/operation.type.dart';
 import 'package:meu_app/widgets/button.widget.dart';
@@ -15,7 +17,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   @override
   void initState() {
-    displayNumber = "00";
+    displayNumber = "0";
     super.initState();
   }
 
@@ -33,9 +35,118 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
+  List<double> parseNumbers(String expression) {
+    RegExp regExp = RegExp(r'[0-9]+\.?[0-9]*');
+
+    var matches = regExp.allMatches(expression);
+
+    List<double> numbers = [];
+    for (var match in matches) {
+      String numberText = match.group(0)!;
+      numbers.add(double.parse(numberText));
+    }
+
+    return numbers;
+  }
+
+  List<OperationTypeEnum> getOperators(String expression) {
+    final expression1 = expression.characters.where(
+      (x) => OperationTypeEnum.values.any((op) => op.symbol == x),
+    );
+
+    var exp = expression1
+        .map((x) => OperationTypeEnum.values.firstWhere((op) => op.symbol == x))
+        .toList();
+
+    return exp;
+  }
+
+  void calculate() {
+    String expression = displayNumber.replaceAll(',', '.');
+    List<double> numbers = parseNumbers(expression);
+    List<OperationTypeEnum> operations = getOperators(expression);
+    resolvePriorityOperations(numbers, operations);
+    resolveAdditionSubtraction(numbers, operations);
+    final result = numbers[0];
+    setState(() {
+      displayNumber = result.toString().replaceAll(',', '.');
+    });
+  }
+
+  void resolvePriorityOperations(
+    List<double> numbers,
+    List<OperationTypeEnum> operators,
+  ) {
+    int index = 0;
+    while (index < operators.length) {
+      if (operators[index] == OperationTypeEnum.multiplication) {
+        numbers[index] = numbers[index] * numbers[index + 1];
+        numbers.removeAt(index + 1);
+        operators.removeAt(index);
+      } else if (operators[index] == OperationTypeEnum.division) {
+        numbers[index] = numbers[index] / numbers[index + 1];
+        numbers.removeAt(index + 1);
+        operators.removeAt(index);
+      } else {
+        index++;
+      }
+    }
+  }
+
+  void resolveAdditionSubtraction(
+    List<double> numbers,
+    List<OperationTypeEnum> operators,
+  ) {
+    int index = 0;
+    while (index < operators.length) {
+      if (operators[index] == OperationTypeEnum.subtraction) {
+        numbers[index] = numbers[index] - numbers[index + 1];
+        numbers.removeAt(index + 1);
+        operators.removeAt(index);
+      } else if (operators[index] == OperationTypeEnum.addition) {
+        numbers[index] = numbers[index] + numbers[index + 1];
+        numbers.removeAt(index + 1);
+        operators.removeAt(index);
+      } else {
+        index++;
+      }
+    }
+  }
+
+  void backspaceNumber() {
+    setState(() {
+      if (displayNumber.length > 1 && displayNumber.isNotEmpty) {
+        displayNumber = displayNumber.substring(0, displayNumber.length - 1);
+      } else {
+        displayNumber = "0";
+      }
+    });
+  }
+
+  void appendOperator(String stringNumber) {
+    setState(() {
+      RegExp rgx = RegExp(r'[0-9]+\.?[0-9]*');
+      var matches = rgx.allMatches(displayNumber);
+      List<String> numbers = matches.map((m) => m.group(0)!).toList();
+      List<OperationTypeEnum> operators = OperationTypeEnum.values;
+
+      // if (operators.any(numbers.last) != "") {
+      //   return;
+      // }
+    });
+  }
+
   void appendNumber(String stringNumber) {
     setState(() {
-      if (stringNumber == "," && displayNumber.contains(',')) {
+      if (stringNumber == ",") {
+        RegExp rgx = RegExp(r'\d+(?:,\d*)?');
+        var matches = rgx.allMatches(displayNumber);
+        List<String> numbers = matches.map((m) => m.group(0)!).toList();
+
+        if (numbers.last.contains(',')) {
+          return;
+        }
+        displayNumber += stringNumber;
         return;
       }
       if (displayNumber == "0") {
@@ -53,7 +164,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calculadora')),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text('Calculadora'),
+        leading: Icon(Icons.calculate),
+      ),
       body: Column(
         children: [
           Container(
@@ -84,7 +199,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ButtonWidget(
                     color: Colors.orange,
                     text: "\u232B",
-                    onPressed: () {},
+                    onPressed: () {
+                      backspaceNumber();
+                    },
                   ),
                   ButtonWidget(
                     text: "÷",
@@ -201,7 +318,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ),
                   ButtonWidget(
                     text: "=",
-                    onPressed: () {},
+                    onPressed: () {
+                      calculate();
+                    },
                     color: Colors.green,
                   ),
                 ],
