@@ -31,19 +31,32 @@ class _CalculatorPageState extends State<CalculatorPage> {
   void setOperationType(OperationTypeEnum newType) {
     setState(() {
       operationType = newType;
+      if (OperationTypeEnum.values.any(
+        (op) => op.symbol == displayNumber.characters.last,
+      )) {
+        displayNumber = displayNumber.replaceRange(
+          displayNumber.length - 1,
+          null,
+          newType.symbol,
+        );
+        return;
+      }
       displayNumber += newType.symbol;
     });
   }
 
   List<double> parseNumbers(String expression) {
     RegExp regExp = RegExp(r'[0-9]+\.?[0-9]*');
-
     var matches = regExp.allMatches(expression);
 
     List<double> numbers = [];
     for (var match in matches) {
       String numberText = match.group(0)!;
       numbers.add(double.parse(numberText));
+    }
+
+    if (expression[0] == OperationTypeEnum.subtraction.symbol) {
+      numbers.first *= -1;
     }
 
     return numbers;
@@ -58,6 +71,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
         .map((x) => OperationTypeEnum.values.firstWhere((op) => op.symbol == x))
         .toList();
 
+    if (expression[0] == OperationTypeEnum.subtraction.symbol) {
+      exp.remove(OperationTypeEnum.subtraction);
+    }
     return exp;
   }
 
@@ -123,19 +139,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  void appendOperator(String stringNumber) {
-    setState(() {
-      RegExp rgx = RegExp(r'[0-9]+\.?[0-9]*');
-      var matches = rgx.allMatches(displayNumber);
-      List<String> numbers = matches.map((m) => m.group(0)!).toList();
-      List<OperationTypeEnum> operators = OperationTypeEnum.values;
-
-      // if (operators.any(numbers.last) != "") {
-      //   return;
-      // }
-    });
-  }
-
   void appendNumber(String stringNumber) {
     setState(() {
       if (stringNumber == ",") {
@@ -146,6 +149,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
         if (numbers.last.contains(',')) {
           return;
         }
+
+        if (OperationTypeEnum.values.any(
+          (op) => op.symbol == displayNumber.characters.last,
+        )) {
+          return;
+        }
+
         displayNumber += stringNumber;
         return;
       }
@@ -191,6 +201,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 children: [
                   ButtonWidget(
                     color: Colors.red,
+                    textColor: Colors.white,
                     text: "C",
                     onPressed: () {
                       clear();
@@ -198,6 +209,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ),
                   ButtonWidget(
                     color: Colors.orange,
+                    textColor: Colors.white,
                     text: "\u232B",
                     onPressed: () {
                       backspaceNumber();
@@ -205,6 +217,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ),
                   ButtonWidget(
                     text: "÷",
+                    textColor: Colors.white,
                     color: Colors.blue,
                     onPressed: () {
                       setOperationType(OperationTypeEnum.division);
@@ -321,6 +334,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     onPressed: () {
                       calculate();
                     },
+                    textColor: Colors.white,
                     color: Colors.green,
                   ),
                 ],
