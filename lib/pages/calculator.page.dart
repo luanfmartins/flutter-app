@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:meu_app/enums/operation.type.dart';
+import 'package:meu_app/pages/history.page.dart';
 import 'package:meu_app/widgets/button.widget.dart';
 
 class CalculatorPage extends StatefulWidget {
@@ -14,10 +15,12 @@ class CalculatorPage extends StatefulWidget {
 class _CalculatorPageState extends State<CalculatorPage> {
   late String displayNumber;
   OperationTypeEnum? operationType;
+  late List<String> history;
 
   @override
   void initState() {
     displayNumber = "0";
+    history = [];
     super.initState();
   }
 
@@ -86,6 +89,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     final result = numbers[0];
     setState(() {
       displayNumber = result.toString().replaceAll(',', '.');
+      history.add("$expression = $result");
     });
   }
 
@@ -177,6 +181,17 @@ class _CalculatorPageState extends State<CalculatorPage> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Calculadora'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HistoryPage()),
+              );
+            },
+            icon: Icon(Icons.history),
+          ),
+        ],
         leading: Icon(Icons.calculate),
       ),
       body: Column(
