@@ -16,6 +16,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
   late String displayNumber;
   OperationTypeEnum? operationType;
   late List<String> history;
+  late bool freshCalcFlag = false;
+  late String lastOperator;
 
   @override
   void initState() {
@@ -28,15 +30,25 @@ class _CalculatorPageState extends State<CalculatorPage> {
     setState(() {
       displayNumber = "0";
       operationType = null;
+      freshCalcFlag = false;
+    });
+  }
+
+  void clearHistory() {
+    setState(() {
+      history.clear();
     });
   }
 
   void setOperationType(OperationTypeEnum newType) {
     setState(() {
+      freshCalcFlag = false;
       operationType = newType;
       if (OperationTypeEnum.values.any(
-        (op) => op.symbol == displayNumber.characters.last,
-      )) {
+            (op) => op.symbol == displayNumber.characters.last,
+          ) ||
+          displayNumber == "Não é possível dividir por zero" ||
+          displayNumber.characters.last == ",") {
         displayNumber = displayNumber.replaceRange(
           displayNumber.length - 1,
           null,
@@ -44,6 +56,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         );
         return;
       }
+
       displayNumber += newType.symbol;
     });
   }
@@ -80,16 +93,74 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return exp;
   }
 
+  double executeOperation(double a, double b, String op) {
+    switch (op) {
+      case "+":
+        return a + b;
+
+      case "-":
+        return a - b;
+
+      case "×":
+        return a * b;
+
+      case "÷":
+        if (b == 0) {
+          throw Exception("Divisão por zero");
+        }
+
+        return a / b;
+
+      default:
+        return b;
+    }
+  }
+
   void calculate() {
     String expression = displayNumber.replaceAll(',', '.');
     List<double> numbers = parseNumbers(expression);
     List<OperationTypeEnum> operations = getOperators(expression);
-    resolvePriorityOperations(numbers, operations);
-    resolveAdditionSubtraction(numbers, operations);
-    final result = numbers[0];
+    String result;
+
+    // quando clica no IGUAL(=) após uma operação ter sido feita
+    // pega a ultima expressao e repete a ultima operação com o current result
+    if (numbers.length <= 1) {
+      if (!freshCalcFlag) {
+        return;
+      }
+      RegExp lastRegexOp = RegExp(r'[+\-x÷]\d+(?:[.,]\d+)?(?=\s*=)');
+
+      var lastExpression = lastRegexOp.allMatches(history.last);
+
+      for (var match in lastExpression) {
+        lastOperator = match.group(0)!;
+      }
+
+      var lastMatch = displayNumber + lastOperator.replaceAll(',', '.');
+
+      var lastNumbers = parseNumbers(lastMatch);
+      var lastOperation = getOperators(lastMatch);
+
+      resolvePriorityOperations(lastNumbers, lastOperation);
+      resolveAdditionSubtraction(lastNumbers, lastOperation);
+
+      result = lastNumbers[0].toString();
+      expression += lastOperator;
+    } else {
+      try {
+        resolvePriorityOperations(numbers, operations);
+        resolveAdditionSubtraction(numbers, operations);
+        result = numbers[0].toString();
+      } on FormatException catch (e) {
+        result = e.message;
+      }
+    }
+
     setState(() {
-      displayNumber = result.toString().replaceAll(',', '.');
+      displayNumber = result;
       history.add("$expression = $result");
+      freshCalcFlag = true;
+      lastOperator = lastOperator;
     });
   }
 
@@ -98,12 +169,16 @@ class _CalculatorPageState extends State<CalculatorPage> {
     List<OperationTypeEnum> operators,
   ) {
     int index = 0;
+
     while (index < operators.length) {
       if (operators[index] == OperationTypeEnum.multiplication) {
         numbers[index] = numbers[index] * numbers[index + 1];
         numbers.removeAt(index + 1);
         operators.removeAt(index);
       } else if (operators[index] == OperationTypeEnum.division) {
+        if (numbers[index + 1] == 0) {
+          throw FormatException("Não é possível dividir por zero");
+        }
         numbers[index] = numbers[index] / numbers[index + 1];
         numbers.removeAt(index + 1);
         operators.removeAt(index);
@@ -135,7 +210,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   void backspaceNumber() {
     setState(() {
-      if (displayNumber.length > 1 && displayNumber.isNotEmpty) {
+      if (displayNumber.length > 1 &&
+          displayNumber.isNotEmpty &&
+          displayNumber != "Não é possível dividir por zero") {
         displayNumber = displayNumber.substring(0, displayNumber.length - 1);
       } else {
         displayNumber = "0";
@@ -143,26 +220,43 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  void appendNumber(String stringNumber) {
+  void appendComma() {
     setState(() {
-      if (stringNumber == ",") {
-        RegExp rgx = RegExp(r'\d+(?:,\d*)?');
-        var matches = rgx.allMatches(displayNumber);
-        List<String> numbers = matches.map((m) => m.group(0)!).toList();
+      RegExp rgx = RegExp(r'\d+(?:,\d*)?');
+      var matches = rgx.allMatches(displayNumber);
+      List<String> numbers = matches.map((m) => m.group(0)!).toList();
 
-        if (numbers.last.contains(',')) {
-          return;
-        }
-
-        if (OperationTypeEnum.values.any(
-          (op) => op.symbol == displayNumber.characters.last,
-        )) {
-          return;
-        }
-
-        displayNumber += stringNumber;
+      if (isOperator(displayNumber.characters.last) ||
+          isComma(displayNumber.characters.last) ||
+          numbers.last.contains(',')) {
         return;
       }
+
+      if (freshCalcFlag) {
+        displayNumber = "0,";
+        return;
+      }
+
+      displayNumber += ",";
+    });
+  }
+
+  bool isComma(String char) {
+    return char == ",";
+  }
+
+  bool isOperator(String char) {
+    return OperationTypeEnum.values.any((op) => op.symbol == char);
+  }
+
+  void appendNumber(String stringNumber) {
+    setState(() {
+      if (displayNumber == "Não é possível dividir por zero") {
+        displayNumber = stringNumber;
+        freshCalcFlag = false;
+        return;
+      }
+
       if (displayNumber == "0") {
         if (stringNumber == ",") {
           displayNumber += stringNumber;
@@ -171,6 +265,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
         displayNumber = stringNumber;
         return;
       }
+
+      if (freshCalcFlag) {
+        displayNumber = stringNumber;
+        freshCalcFlag = false;
+        return;
+      }
+
       displayNumber += stringNumber;
     });
   }
@@ -186,7 +287,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const HistoryPage()),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      HistoryPage(history: history, onClear: clearHistory),
+                ),
               );
             },
             icon: Icon(Icons.history),
@@ -341,7 +445,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ButtonWidget(
                     text: ",",
                     onPressed: () {
-                      appendNumber(",");
+                      appendComma();
                     },
                   ),
                   ButtonWidget(
