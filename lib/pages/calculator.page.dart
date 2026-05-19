@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:meu_app/enums/operation.type.dart';
 import 'package:meu_app/pages/history.page.dart';
@@ -12,11 +10,13 @@ class CalculatorPage extends StatefulWidget {
   State<CalculatorPage> createState() => _CalculatorPageState();
 }
 
+enum FreshCalcEnum { fresh, inProgress, none }
+
 class _CalculatorPageState extends State<CalculatorPage> {
   late String displayNumber;
   OperationTypeEnum? operationType;
   late List<String> history;
-  late bool freshCalcFlag = false;
+  late FreshCalcEnum freshCalcFlag = FreshCalcEnum.none;
   late String lastOperator;
 
   @override
@@ -30,7 +30,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     setState(() {
       displayNumber = "0";
       operationType = null;
-      freshCalcFlag = false;
+      freshCalcFlag = FreshCalcEnum.none;
     });
   }
 
@@ -42,7 +42,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   void setOperationType(OperationTypeEnum newType) {
     setState(() {
-      freshCalcFlag = false;
+      freshCalcFlag = FreshCalcEnum.none;
       operationType = newType;
       if (OperationTypeEnum.values.any(
             (op) => op.symbol == displayNumber.characters.last,
@@ -101,7 +101,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       case "-":
         return a - b;
 
-      case "×":
+      case "x":
         return a * b;
 
       case "÷":
@@ -125,7 +125,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     // quando clica no IGUAL(=) após uma operação ter sido feita
     // pega a ultima expressao e repete a ultima operação com o current result
     if (numbers.length <= 1) {
-      if (!freshCalcFlag) {
+      if (freshCalcFlag == FreshCalcEnum.none) {
         return;
       }
       RegExp lastRegexOp = RegExp(r'[+\-x÷]\d+(?:[.,]\d+)?(?=\s*=)');
@@ -159,7 +159,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     setState(() {
       displayNumber = result;
       history.add("$expression = $result");
-      freshCalcFlag = true;
+      freshCalcFlag = FreshCalcEnum.fresh;
       lastOperator = lastOperator;
     });
   }
@@ -232,7 +232,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         return;
       }
 
-      if (freshCalcFlag) {
+      if (freshCalcFlag == FreshCalcEnum.fresh) {
         displayNumber = "0,";
         return;
       }
@@ -253,7 +253,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     setState(() {
       if (displayNumber == "Não é possível dividir por zero") {
         displayNumber = stringNumber;
-        freshCalcFlag = false;
+        freshCalcFlag = FreshCalcEnum.none;
         return;
       }
 
@@ -266,9 +266,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
         return;
       }
 
-      if (freshCalcFlag) {
+      if (freshCalcFlag == FreshCalcEnum.fresh) {
         displayNumber = stringNumber;
-        freshCalcFlag = false;
+        freshCalcFlag = FreshCalcEnum.inProgress;
         return;
       }
 
